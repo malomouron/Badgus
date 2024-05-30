@@ -758,11 +758,6 @@ if (isset($_POST['planning_day'])){
     foreach ($select_employer as $employer){
         $select_employer_planning = $db->query("SELECT * FROM badgeuse_planning where id_employer = ".$employer['id_employer'])->fetchAll();
         $select_em = $db->query("SELECT badgeuse_employer.id_employer, id_contrat, badgeuse_etablissements.id_etablissement, employer_nom, employer_prenom, etablissement_nom FROM badgeuse_contrat, badgeuse_employer, badgeuse_etablissements WHERE badgeuse_etablissements.id_etablissement = badgeuse_contrat.id_etablissement AND badgeuse_contrat.id_employer = badgeuse_employer.id_employer AND badgeuse_employer.id_employer = ".$employer['id_employer']." AND badgeuse_contrat.id_etablissement = ".$_SESSION['etablissement'] )->fetchArray();
-        echo '<tr>
-                <td class="hour" rowspan="1">
-                    <span>'.$employer['employer_nom'].' '.$employer['employer_prenom'].'</span>
-                    <span>'.$employer["type_contrat"].' ('.$employer["vol_h"].'h) ';
-
 
         if (isset($_GET['semaine'])){
             $semaine = date("W", strtotime($_GET['semaine']." week"));
@@ -774,6 +769,16 @@ if (isset($_POST['planning_day'])){
         }
         $select_calc_totalH = $db->query("SELECT * FROM badgeuse_planning where id_employer = ".$employer['id_employer'].' AND planning_annee = '.$year.' AND WEEK(planning_entree, 3) = '.$semaine)->fetchAll();
         $calcul_nombre_heure_semaine = 0;
+
+        $select_total_hour_sem = $db->query("SELECT SUM(TIMESTAMPDIFF(MINUTE, badgeuse_badge.badge_date_entree, badgeuse_badge.badge_date_sortie) / 60.0) AS total_hours FROM badgeuse_badge INNER JOIN badgeuse_employer ON badgeuse_badge.id_employer = badgeuse_employer.id_employer WHERE WEEK(badgeuse_badge.badge_date_entree, 3) = ".$semaine." AND YEAR(badgeuse_badge.badge_date_entree) = ".$year." AND badgeuse_badge.id_employer = ".$employer['id_employer'].";")->fetchArray();
+
+        echo '<tr>
+                <td class="hour" rowspan="1">
+                    <span>'.$employer['employer_nom'].' '.$employer['employer_prenom'].'</span>
+                    <span>'.$employer["type_contrat"].' ('.$employer["vol_h"].'h) ';
+
+
+
         foreach ($select_calc_totalH as $entree){
             $date1 = new DateTime($entree['planning_entree']);
             $date2 = new DateTime($entree['planning_sortie']);
@@ -788,7 +793,8 @@ if (isset($_POST['planning_day'])){
             $calcul_nombre_heure_semaine += $totalHours;
         }
 
-        echo'    <span style="text-decoration: underline dotted;display: initial;" title="Total d\'heure prévue dans le planning cette semaine">'.round($calcul_nombre_heure_semaine, 2).'h</span></span>
+        echo'    <span style="text-decoration: underline dotted;display: initial;" title="Total d\'heure prévue dans le planning cette semaine">'.round($calcul_nombre_heure_semaine, 2).'h</span>
+                 <span>Total heure badgé : '.round($select_total_hour_sem['total_hours'], 2).'h</span></span>
                </td>';
 
         $dateCourante = $debutSemaine;
@@ -1010,6 +1016,15 @@ if (isset($_POST['planning_day'])){
                                                          "</form>";
 
                                 } else {
+                                    let timeSortie = entry.badge_date_sortie.slice(11, 19);
+                                    let timeEntree = entry.badge_date_entree.slice(11, 19);
+
+                                    let dateSortie = new Date('1970-01-01T' + timeSortie + 'Z');
+                                    let dateEntree = new Date('1970-01-01T' + timeEntree + 'Z');
+
+                                    let diffMs = Math.abs(dateSortie - dateEntree); // difference in milliseconds
+                                    let diffHrs = diffMs / (1000 * 60 * 60); // convert milliseconds to hours
+
                                     entryDiv.innerHTML = "<form class='form_planning_mof_badge "+ class_suplem +"' method='post' action='modif_badge.php'>" +
                                                              "<label for='formulaire_modif_badge_entree'>Arrivée : </label>" +
                                                              "<input required type='time' name='entree' id='formulaire_modif_badge_entree' value='" + entry.badge_date_entree.slice(-8, -3) + "'>"+
@@ -1021,6 +1036,8 @@ if (isset($_POST['planning_day'])){
                                                              "<input type='hidden' name='id_badge' value='"+ entry.id_badge +"'>"+
                                                              "<input type='hidden' name='date_badge' value='"+ entry.badge_date_entree.slice(0, 10) +"'>"+
                                                              "<input type='submit' value='Modifier'>"+
+                                                             "<span class='p_margin'></span>" +
+                                                             "<span>" + diffHrs.toFixed(3) + " heures</span>"+
                                                          "</form>";
                                 }
 

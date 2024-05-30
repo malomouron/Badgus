@@ -682,11 +682,150 @@ foreach ($select_detail2_abs as $detail){
 $sheet2->calculateColumnWidths();
 
 
+
+
+
+
+// Création des feuilles pour chaque emloyer
+$select_emlpoyer = $db->query("SELECT badgeuse_employer.id_employer, employer_prenom, employer_nom FROM badgeuse_employer JOIN badgeuse_contrat ON badgeuse_contrat.id_employer = badgeuse_employer.id_employer WHERE badgeuse_contrat.id_etablissement = ".$_SESSION['etablissement'])->fetchAll();
+
+$boucle_compteur = 2;
+foreach ($select_emlpoyer as $employer_selectionner){
+
+    $select_detail = $db->query("SELECT bb.id_employer, e.employer_nom, e.employer_prenom, c.type_contrat, c.vol_h, et.etablissement_nom, WEEK(bb.badge_date_entree, 3) AS num_semaine, DATE_FORMAT(bb.badge_date_entree, '%d/%m/%Y') AS date_entree, TIME_FORMAT(bb.badge_date_entree, '%H:%i') AS heure_entree, TIME_FORMAT(bb.badge_date_sortie, '%H:%i') AS heure_sortie, bb.badge_date_entree_dernier, bb.badge_date_sortie_dernier, TIME_TO_SEC( TIMEDIFF(bb.badge_date_sortie, bb.badge_date_entree) ) / 3600 AS heures_travaillees, bb.cron FROM badgeuse_badge bb JOIN badgeuse_employer e ON bb.id_employer = e.id_employer JOIN badgeuse_contrat c ON bb.id_employer = c.id_employer JOIN badgeuse_etablissements et ON c.id_etablissement = et.id_etablissement WHERE bb.id_employer = ".$employer_selectionner["id_employer"]." AND MONTH(bb.badge_date_entree) = ".securisation($_GET['mois'])." AND YEAR(bb.badge_date_entree) = ".securisation($_GET['annee'])." AND et.id_etablissement = ".$_SESSION['etablissement']." ORDER BY bb.id_employer, bb.badge_date_entree;")->fetchAll();
+    $select_detail2_abs = $db->query("SELECT bp.id_employer, e.employer_nom, e.employer_prenom, c.type_contrat, c.vol_h, et.etablissement_nom, WEEK(bp.planning_entree, 3) AS num_semaine, DATE_FORMAT(bp.planning_entree, '%d/%m/%Y') AS date_entree, TIME_FORMAT(bp.planning_entree, '%H:%i') AS heure_entree, TIME_FORMAT(bp.planning_sortie, '%H:%i') AS heure_sortie, TIME_TO_SEC( TIMEDIFF( bp.planning_sortie, bp.planning_entree ) ) / 3600 AS heures_travaillees, bp.abs_type FROM badgeuse_planning bp JOIN badgeuse_employer e ON bp.id_employer = e.id_employer JOIN badgeuse_contrat c ON bp.id_employer = c.id_employer JOIN badgeuse_etablissements et ON c.id_etablissement = et.id_etablissement WHERE bp.id_employer = ".$employer_selectionner["id_employer"]." AND MONTH(bp.planning_entree) = ".securisation($_GET['mois'])." AND YEAR(bp.planning_entree) = ".securisation($_GET['annee'])." AND et.id_etablissement = ".$_SESSION['etablissement']." AND bp.abs_type != 'NO' ORDER BY bp.id_employer, bp.planning_entree;")->fetchAll();
+
+    if (count($select_detail) != 0 or count($select_detail2_abs) != 0){
+        $spreadsheet->createSheet();
+        $sheetTemps = $spreadsheet->getSheet($boucle_compteur); // Accès à la deuxième feuille
+        $sheetTemps->setTitle('Détails '.$employer_selectionner["employer_prenom"]." ".$employer_selectionner["employer_nom"]);
+        $sheetTemps->setCellValue('A1', 'Prénom');
+        $sheetTemps->setCellValue('B1', 'Nom');
+        $sheetTemps->setCellValue('C1', 'Type de contrat');
+        $sheetTemps->setCellValue('D1', 'Temps contractuel');
+        $sheetTemps->setCellValue('E1', 'Etablissement principal');
+        $sheetTemps->setCellValue('F1', 'N° semaine');
+        $sheetTemps->setCellValue('G1', 'Date');
+        $sheetTemps->setCellValue('H1', 'Début');
+        $sheetTemps->setCellValue('I1', 'Fin');
+        $sheetTemps->setCellValue('J1', 'Retard (h)');
+        $sheetTemps->setCellValue('K1', 'Heures Travaillées (h)');
+        $sheetTemps->setCellValue('L1', 'Absences Incluses dans le Compteur');
+        $sheetTemps->setCellValue('M1', 'Absences non incluses dans le Compteur');
+        $sheetTemps->setCellValue('N1', 'Repas Dûs');
+        $sheetTemps->setCellValue('O1', 'Type Badge');
+        $sheetTemps->setCellValue('P1', 'Type Absence');
+        $sheetTemps->setCellValue('Q1', 'Ancien badge d\'entrée');
+        $sheetTemps->setCellValue('R1', 'Ancien badge de sortie');
+
+        $sheetTemps->getStyle('A1')->applyFromArray($style);
+        $sheetTemps->getStyle('B1')->applyFromArray($style);
+        $sheetTemps->getStyle('C1')->applyFromArray($style);
+        $sheetTemps->getStyle('D1')->applyFromArray($style);
+        $sheetTemps->getStyle('E1')->applyFromArray($style);
+        $sheetTemps->getStyle('F1')->applyFromArray($style);
+        $sheetTemps->getStyle('G1')->applyFromArray($style);
+        $sheetTemps->getStyle('H1')->applyFromArray($style);
+        $sheetTemps->getStyle('I1')->applyFromArray($style);
+        $sheetTemps->getStyle('J1')->applyFromArray($style);
+        $sheetTemps->getStyle('K1')->applyFromArray($style);
+        $sheetTemps->getStyle('L1')->applyFromArray($style);
+        $sheetTemps->getStyle('M1')->applyFromArray($style);
+        $sheetTemps->getStyle('N1')->applyFromArray($style);
+        $sheetTemps->getStyle('O1')->applyFromArray($style);
+        $sheetTemps->getStyle('P1')->applyFromArray($style);
+        $sheetTemps->getStyle('Q1')->applyFromArray($style);
+        $sheetTemps->getStyle('R1')->applyFromArray($style);
+
+
+        $columnIndex = 'A';
+        $lastColumnIndex = 'R'; // Mettez à jour ceci avec la dernière colonne de votre feuille
+        while ($columnIndex <= $lastColumnIndex) {
+            $sheetTemps->getColumnDimension($columnIndex)->setAutoSize(true);
+            $columnIndex++;
+        }
+
+        $c = 2;
+        foreach ($select_detail as $detail){
+            $sheetTemps->setCellValue("A$c", $detail["employer_prenom"]);
+            $sheetTemps->setCellValue("B$c", $detail["employer_nom"]);
+            $sheetTemps->setCellValue("C$c", $detail["type_contrat"]);
+            $sheetTemps->setCellValue("D$c", $detail["vol_h"]);
+            $sheetTemps->setCellValue("E$c", $detail["etablissement_nom"]);
+            $sheetTemps->setCellValue("F$c", $detail["num_semaine"]);
+            $sheetTemps->setCellValue("G$c", $detail["date_entree"]);
+            $sheetTemps->setCellValue("H$c", $detail["heure_entree"]);
+            $sheetTemps->setCellValue("I$c", $detail["heure_sortie"]);
+            $sheetTemps->setCellValue("J$c", 'Retard (h)');
+            $sheetTemps->setCellValue("K$c", $detail["heures_travaillees"]);
+            $sheetTemps->setCellValue("L$c", '');
+            $sheetTemps->setCellValue("M$c", '');
+            $sheetTemps->setCellValue("N$c", '');
+            $sheetTemps->setCellValue("O$c", '');
+            $sheetTemps->setCellValue("P$c", '');
+            $sheetTemps->setCellValue("Q$c", '');
+            $sheetTemps->setCellValue("R$c", '');
+
+            if ($detail["heures_travaillees"] > 0.5){
+                $sheetTemps->setCellValue("N$c", '1');
+            }
+
+            if ($detail["cron"] == 1){
+                $sheetTemps->setCellValue("O$c", "Erreur de badge");
+            }elseif ($detail["cron"] == 2){
+                $sheetTemps->setCellValue("O$c", "Badge corrigé après erreur");
+            }elseif ($detail["cron"] == 3){
+                $sheetTemps->setCellValue("O$c", "Badge Modifié");
+            }elseif ($detail["cron"] == 4){
+                $sheetTemps->setCellValue("O$c", "Badge Ajouté");
+            }
+
+            if ($detail["badge_date_entree_dernier"] == NULL){
+                $sheetTemps->setCellValue("Q$c", $detail["badge_date_entree_dernier"]);
+            }
+            if ($detail["badge_date_sortie_dernier"] == NULL){
+                $sheetTemps->setCellValue("R$c", $detail["badge_date_sortie_dernier"]);
+            }
+            $c++;
+        }
+        foreach ($select_detail2_abs as $detail){
+            $sheetTemps->setCellValue("A$c", $detail["employer_prenom"]);
+            $sheetTemps->setCellValue("B$c", $detail["employer_nom"]);
+            $sheetTemps->setCellValue("C$c", $detail["type_contrat"]);
+            $sheetTemps->setCellValue("D$c", $detail["vol_h"]);
+            $sheetTemps->setCellValue("E$c", $detail["etablissement_nom"]);
+            $sheetTemps->setCellValue("F$c", $detail["num_semaine"]);
+            $sheetTemps->setCellValue("G$c", $detail["date_entree"]);
+            $sheetTemps->setCellValue("H$c", $detail["heure_entree"]);
+            $sheetTemps->setCellValue("I$c", $detail["heure_sortie"]);
+            $sheetTemps->setCellValue("J$c", '');
+            $sheetTemps->setCellValue("K$c", $detail["heures_travaillees"]);
+
+            if ($detail['abs_type'] != "AI"){
+                $sheetTemps->setCellValue("L$c", $detail["heures_travaillees"]);
+                $sheetTemps->setCellValue("M$c", '');
+            }else{
+                $sheetTemps->setCellValue("L$c", '');
+                $sheetTemps->setCellValue("M$c", $detail["heures_travaillees"]);
+            }
+            $sheetTemps->setCellValue("N$c", '');
+
+            $sheetTemps->setCellValue("O$c", "");
+            $sheetTemps->setCellValue("P$c", $detail['abs_type']);
+
+            $c++;
+        }
+
+        $sheetTemps->calculateColumnWidths();
+        $boucle_compteur++;
+    }
+}
+
 $m = array('','Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre');
 $select_info_title = $db->query("SELECT * FROM badgeuse_etablissements where id_etablissement = ".$_SESSION['etablissement'])->fetchArray();
 // Création du fichier XLSX
 $writer = new Xlsx($spreadsheet);
-$cheminFichierXLSX = str_replace(' ', '_', strtoupper($select_info_title['etablissement_nom']))."_".$m[$_GET['mois']].".xlsx";
+$cheminFichierXLSX = str_replace(' ', '_', strtoupper($select_info_title['etablissement_nom']))."_".$m[$_GET['mois']]."_".$_GET['annee'].".xlsx";
 $writer->save($cheminFichierXLSX);
 
 // Lancement du téléchargement
