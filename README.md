@@ -28,21 +28,21 @@ cd badgus
      mysql -u votre_utilisateur -p votre_base_de_donnees < chemin/vers/le/modele_de_base.sql
      ```
 
-2. Configurez le fichier `config.inc.php` en remplissant les informations de connexion à la base de données :
+2. Configurez le fichier `config.inc.badger.php` en remplissant les informations de connexion à la base de données :
 
    ```php
    <?php
-      // config.inc.php
+      // config.inc.badger.php
    
-   	$servername = "localhost";
-   	$username = "root";
-   	$password = "";
-   	$dbname = "";
-   	$domaine = 'localhost';
-   	$expediteur   = 'email@domain.com';
-   	$site_key = ''; //G-capcha key
-   	$os = "windos"; //[windos|linux]
-   	$myprivatekey = "";
+	$servername = "localhost";
+	$username = "root";
+	$password = ";
+	$dbname = "";
+	$domaine = 'localhost';
+	$expediteur   = 'email@domain.com';
+	$site_key = ''; //G-capcha key
+	$os = "windos"; //[windos|linux]
+	$myprivatekey = "";
    ?>
 	
    ```
