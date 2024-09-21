@@ -7,6 +7,7 @@ Badg'us est une application web permettant la gestion des badges des employés e
 - **PHP** version 7.4 ou plus
 - **MySQL** ou **MariaDB** pour la base de données
 - **Apache** ou tout autre serveur web compatible avec PHP
+- Composer (facultatif, selon la gestion des dépendances)
 
 ## Installation
 
